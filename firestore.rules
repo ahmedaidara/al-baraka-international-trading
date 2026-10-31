@@ -1,0 +1,134 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper: utilisateur authentifié
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // Helper: administrateur (claim custom ou document users)
+    function isAdmin() {
+      return isSignedIn() && 
+        (request.auth.token.admin == true || 
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin');
+    }
+
+    // Helper: propriétaire de la ressource
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    // === USERS ===
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow create: if isSignedIn() && request.auth.uid == userId
+                    && request.resource.data.role == 'client';
+      allow update: if isOwner(userId) 
+                    && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'createdAt'])
+                    || isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // === PRODUCTS (lecture publique pour catalogue, écriture admin) ===
+    match /products/{productId} {
+      allow read: if true; // Catalogue public
+      allow write: if isAdmin();
+    }
+
+    // === CATEGORIES ===
+    match /categories/{categoryId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // === EXCHANGE RATES & SETTINGS ===
+    match /exchangeRates/{docId} {
+      allow read: if true; // Taux public pour calculateur
+      allow write: if isAdmin();
+    }
+
+    match /exchangeSettings/{docId} {
+      allow read: if isAdmin();
+      allow write: if isAdmin();
+    }
+
+    // === PAYMENT METHODS ===
+    match /paymentMethods/{methodId} {
+      // Lecture limitée : infos publiques seulement (pas de coordonnées secrètes)
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // === EXCHANGE REQUESTS ===
+    match /exchangeRequests/{requestId} {
+      allow read: if isSignedIn() && 
+                    (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isSignedIn() 
+                    && request.resource.data.userId == request.auth.uid
+                    && request.resource.data.status == 'pending';
+      allow update: if isAdmin() 
+                    || (isSignedIn() 
+                        && resource.data.userId == request.auth.uid 
+                        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['proofUrl', 'clientNote', 'updatedAt']));
+      allow delete: if isAdmin();
+    }
+
+    // === ORDERS ===
+    match /orders/{orderId} {
+      allow read: if isSignedIn() && 
+                    (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isSignedIn() 
+                    && request.resource.data.userId == request.auth.uid;
+      allow update: if isAdmin()
+                    || (isSignedIn() 
+                        && resource.data.userId == request.auth.uid 
+                        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['clientNote', 'updatedAt']));
+      allow delete: if isAdmin();
+    }
+
+    // === TRACKING EVENTS ===
+    match /trackingEvents/{eventId} {
+      allow read: if isSignedIn() || 
+                    (resource.data.public == true); // Suivi public limité
+      allow write: if isAdmin();
+    }
+
+    // === NOTIFICATIONS ===
+    match /notifications/{notifId} {
+      allow read: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isAdmin() || isSignedIn();
+      allow update: if isSignedIn() && resource.data.userId == request.auth.uid
+                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read', 'readAt']);
+      allow delete: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
+    }
+
+    // === SUPPORT TICKETS ===
+    match /supportTickets/{ticketId} {
+      allow read: if isSignedIn() && 
+                    (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow update: if isAdmin() || 
+                    (isSignedIn() && resource.data.userId == request.auth.uid);
+      allow delete: if isAdmin();
+    }
+
+    // === ADMIN ACTIVITY LOGS (écriture serveur uniquement idéalement) ===
+    match /adminActivityLogs/{logId} {
+      allow read: if isAdmin();
+      allow create: if isAdmin();
+      allow update, delete: if false; // Immutable
+    }
+
+    // === APP SETTINGS ===
+    match /appSettings/{settingId} {
+      allow read: if true; // Paramètres publics (taux, conditions...)
+      allow write: if isAdmin();
+    }
+
+    // Deny everything else by default
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

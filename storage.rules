@@ -1,0 +1,51 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && request.auth.token.admin == true;
+    }
+
+    // Images produits (lecture publique, écriture admin)
+    match /products/{allPaths=**} {
+      allow read: if true;
+      allow write: if isAdmin()
+                  && request.resource.size < 5 * 1024 * 1024
+                  && request.resource.contentType.matches('image/.*');
+    }
+
+    // Justificatifs d'échange (privé)
+    match /exchange-proofs/{userId}/{allPaths=**} {
+      allow read: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+      allow write: if isSignedIn() 
+                   && request.auth.uid == userId
+                   && request.resource.size < 5 * 1024 * 1024
+                   && request.resource.contentType.matches('image/.*|application/pdf');
+    }
+
+    // Preuves de livraison / tracking
+    match /tracking/{allPaths=**} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin()
+                   && request.resource.size < 5 * 1024 * 1024;
+    }
+
+    // Avatars utilisateurs
+    match /avatars/{userId} {
+      allow read: if true;
+      allow write: if isSignedIn() 
+                   && request.auth.uid == userId
+                   && request.resource.size < 2 * 1024 * 1024
+                   && request.resource.contentType.matches('image/.*');
+    }
+
+    // Deny all other paths
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
