@@ -6,11 +6,22 @@ Deux services principaux :
 1. **Échange de fonds** (Wave / Orange Money ↔ Alipay / WeChat Pay) — traitement manuel sécurisé
 2. **Boutique** de produits chinois avec suivi de colis jusqu’au Sénégal
 
-Application **mobile-first**, PWA, Firebase (Auth + Firestore + Storage).
+Application **client mobile-first**, PWA, Firebase (Auth + Firestore + Storage).
 
 ---
 
-## Structure du projet
+## Repos du projet
+
+| Dépôt | Rôle |
+|-------|------|
+| **al-baraka-international-trading** (ce dépôt) | Application **client** |
+| [abit-admin](https://github.com/ahmedaidara/abit-admin) | Application **administrateur** |
+
+Les deux applications partagent le **même projet Firebase** : `abit-d927a`.
+
+---
+
+## Structure du projet (client)
 
 ```
 al-baraka-international-trading/
@@ -26,14 +37,6 @@ al-baraka-international-trading/
 │   ├── manifest.webmanifest
 │   ├── sw.js
 │   └── icons/
-├── admin/                  # Application administrateur
-│   ├── index.html          # Tableau de bord
-│   ├── exchanges.html      # (à venir)
-│   ├── orders.html         # (à venir)
-│   ├── products.html       # (à venir)
-│   ├── tracking.html       # (à venir)
-│   ├── customers.html      # (à venir)
-│   └── settings.html       # (à venir)
 ├── shared/
 │   ├── css/design-system.css
 │   └── js/
@@ -53,41 +56,36 @@ al-baraka-international-trading/
 
 **Projet :** `abit-d927a`
 
-1. Active **Authentication** → Email/Password
-2. Crée une base **Firestore** (mode production)
-3. Active **Storage**
+1. Authentication → Email/Password (déjà activé)
+2. Firestore (mode production)
+3. Storage
 4. Déploie les règles :
    ```bash
    firebase deploy --only firestore:rules,storage
    ```
-5. (Optionnel) Configure Hosting avec deux targets (`client` et `admin`)
 
 ### Créer le premier administrateur
 
-1. Inscris-toi via l’application client (`register.html`) ou crée un compte dans la console Firebase Authentication.
-2. Dans Firestore, ouvre le document `users/{uid}` correspondant.
-3. Change le champ `role` de `"client"` à `"admin"`.
-4. Connecte-toi ensuite sur `/admin/`.
+1. Inscris-toi via l’application client (`register.html`) ou crée un compte dans Firebase Authentication.
+2. Dans Firestore → `users/{uid}` → change le champ `role` de `"client"` à `"admin"`.
+3. Connecte-toi ensuite sur le dépôt **abit-admin**.
 
-**Important :** un client ne peut jamais s’attribuer le rôle admin lui-même (règles Firestore).
+Un client ne peut jamais s’attribuer le rôle admin lui-même.
 
 ---
 
 ## Lancement local
 
 ```bash
-# Installer Firebase CLI si besoin
 npm install -g firebase-tools
 firebase login
 firebase use abit-d927a
 
-# Servir les fichiers (ou ouvrir directement client/index.html)
+# Servir le client
 npx serve client
 # ou
 firebase serve --only hosting
 ```
-
-Pour l’admin : ouvrir `admin/index.html` (ou configurer un second target Hosting).
 
 ---
 
@@ -103,40 +101,32 @@ Pour l’admin : ouvrir `admin/index.html` (ou configurer un second target Hosti
 ## État actuel (31 oct. 2026)
 
 ### Terminé
-- Dépôt GitHub créé et public
-- Architecture client / admin / shared
+- Dépôt client créé et public
+- Dépôt admin séparé : [abit-admin](https://github.com/ahmedaidara/abit-admin)
 - Design system CSS complet
 - Configuration Firebase + règles de sécurité strictes
 - Page d’accueil client (deux services + taux)
 - Authentification client (inscription / connexion / reset)
-- Tableau de bord admin avec protection par rôle
 - Manifest PWA + Service Worker de base
 
 ### Prochaines étapes prioritaires
 1. Service **Boutique** (produits, panier, commandes, tracking)
-2. Service **Échange** (calculateur, demandes, justificatifs, gestion admin)
+2. Service **Échange** (calculateur, demandes, justificatifs)
 3. Pages manquantes (profile, orders, etc.)
 4. Cloud Functions pour calculs et notifications
-5. Tests des parcours complets
+5. Pages de gestion dans abit-admin
 
 ---
 
 ## Sécurité
 
-- Règles Firestore restrictives (pas d’accès public en écriture)
-- Rôle admin contrôlé côté serveur / document
+- Règles Firestore restrictives
+- Rôle admin contrôlé côté document + code
 - Aucun secret dans le code frontend
 - Justificatifs stockés dans des chemins privés Storage
-- Calculs monétaires et validations sensibles à placer en Cloud Functions
-
----
-
-## Licence & usage
-
-Projet privé commercial d’AL Baraka International Trading.  
-Ne pas présenter ABIT comme un établissement de paiement agréé tant que les autorisations nécessaires n’ont pas été obtenues.
 
 ---
 
 **Contact projet :** Ahmed Said Aidara  
-**Repo :** https://github.com/ahmedaidara/al-baraka-international-trading
+**Repo client :** https://github.com/ahmedaidara/al-baraka-international-trading  
+**Repo admin :** https://github.com/ahmedaidara/abit-admin
