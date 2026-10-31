@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
+  <meta name="theme-color" content="#0B3D2E" />
+  <title>ABIT — Commande</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/design-system.css" />
+</head>
+<body>
+  <div class="page-content">
+    <header class="app-header">
+      <div class="container" style="display:flex;align-items:center;gap:var(--space-3)">
+        <a href="cart.html" style="color:white">←</a>
+        <div class="logo">Finaliser la commande</div>
+      </div>
+    </header>
+    <main class="container" style="padding-top:var(--space-5)">
+      <div class="card" style="margin-bottom:var(--space-4)">
+        <div class="form-group">
+          <label class="form-label">Nom du destinataire</label>
+          <input type="text" id="name" class="form-input" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Téléphone</label>
+          <input type="tel" id="phone" class="form-input" placeholder="+221 …" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Ville</label>
+          <input type="text" id="city" class="form-input" placeholder="Dakar, Thiès…" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Quartier / Adresse</label>
+          <input type="text" id="address" class="form-input" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Indications</label>
+          <textarea id="notes" class="form-textarea" placeholder="Repères, horaires…"></textarea>
+        </div>
+      </div>
+      <button class="btn btn-primary btn-block" id="submit">Confirmer la commande</button>
+      <p id="msg" style="margin-top:var(--space-3);font-size:0.9rem;display:none"></p>
+    </main>
+  </div>
+  <script type="module">
+    import { auth, db, onAuthStateChanged, serverTimestamp } from "./js/firebase-init.js";
+    import { collection, addDoc } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+
+    let user = null;
+    onAuthStateChanged(auth, (u) => {
+      user = u;
+      if (!u) location.href = "login.html";
+    });
+
+    document.getElementById("submit").addEventListener("click", async () => {
+      if (!user) return;
+      const cart = JSON.parse(localStorage.getItem("abit_cart") || "[]");
+      if (!cart.length) { alert("Panier vide"); return; }
+      const name = document.getElementById("name").value.trim();
+      const phone = document.getElementById("phone").value.trim();
+      const city = document.getElementById("city").value.trim();
+      const address = document.getElementById("address").value.trim();
+      if (!name || !phone || !city || !address) { alert("Remplissez les champs obligatoires."); return; }
+      const btn = document.getElementById("submit");
+      btn.disabled = true;
+      const total = cart.reduce((s, i) => s + (i.priceXof || 0) * (i.qty || 1), 0);
+      const year = new Date().getFullYear();
+      try {
+        const ref = await addDoc(collection(db, "orders"), {
+          userId: user.uid,
+          orderNumber: `ABIT-CMD-${year}-${Date.now().toString().slice(-6)}`,
+          items: cart,
+          totalXof: total,
+          recipient: { name, phone, city, address, notes: document.getElementById("notes").value.trim() },
+          status: "received",
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp()
+        });
+        localStorage.removeItem("abit_cart");
+        const msg = document.getElementById("msg");
+        msg.style.display = "block";
+        msg.style.color = "var(--status-success)";
+        msg.textContent = "Commande enregistrée. Vous pouvez suivre son statut dans Mes commandes.";
+        setTimeout(() => location.href = "orders.html", 2000);
+      } catch (e) {
+        document.getElementById("msg").style.display = "block";
+        document.getElementById("msg").style.color = "var(--status-error)";
+        document.getElementById("msg").textContent = "Erreur lors de l’enregistrement.";
+        btn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>

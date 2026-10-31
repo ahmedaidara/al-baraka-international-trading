@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
+  <meta name="theme-color" content="#0B3D2E" />
+  <title>ABIT — Boutique</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/design-system.css" />
+  <style>
+    .product-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3); }
+    .product-card {
+      background: white; border-radius: var(--radius-md); overflow: hidden;
+      border: 1px solid var(--abit-gray-100); box-shadow: var(--shadow-sm);
+    }
+    .product-card .thumb {
+      aspect-ratio: 1; background: var(--abit-gray-50);
+      display: flex; align-items: center; justify-content: center; color: var(--abit-gray-400); font-size: 0.8rem;
+    }
+    .product-card .body { padding: var(--space-3); }
+    .product-card .name { font-size: 0.85rem; font-weight: 600; margin-bottom: 4px; line-height: 1.3; }
+    .product-card .price { font-size: 0.9rem; font-weight: 700; color: var(--abit-green); }
+  </style>
+</head>
+<body>
+  <div class="page-content">
+    <header class="app-header">
+      <div class="container" style="display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div class="logo">Boutique</div>
+          <p style="font-size:0.8rem;opacity:0.85;margin-top:2px">Produits depuis la Chine</p>
+        </div>
+        <a href="cart.html" style="color:white;font-size:0.875rem">Panier</a>
+      </div>
+    </header>
+    <main class="container" style="padding-top:var(--space-5)">
+      <div class="form-group">
+        <input type="search" id="search" class="form-input" placeholder="Rechercher un produit…" />
+      </div>
+      <div id="list" class="product-grid"></div>
+      <div id="empty" class="empty-state" style="display:none">
+        <p>Aucun produit publié pour le moment.</p>
+        <p style="font-size:0.85rem;margin-top:var(--space-2)">Les articles apparaîtront ici dès qu’ils seront ajoutés depuis l’admin.</p>
+      </div>
+    </main>
+  </div>
+  <nav class="bottom-nav">
+    <a href="index.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Accueil</a>
+    <a href="exchange.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 16V4M7 4L3 8M7 4l4 4M17 8v12M17 20l4-4M17 20l-4-4"/></svg>Échange</a>
+    <a href="shop.html" class="active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/></svg>Boutique</a>
+    <a href="orders.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Commandes</a>
+    <a href="profile.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Profil</a>
+  </nav>
+  <script type="module">
+    import { db } from "./js/firebase-init.js";
+    import { collection, query, where, getDocs, orderBy } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+
+    const list = document.getElementById("list");
+    const empty = document.getElementById("empty");
+    let products = [];
+
+    async function load() {
+      try {
+        const q = query(collection(db, "products"), where("published", "==", true));
+        const snap = await getDocs(q);
+        products = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        render(products);
+      } catch (e) {
+        empty.style.display = "block";
+        empty.querySelector("p").textContent = "Catalogue indisponible pour le moment.";
+      }
+    }
+
+    function render(items) {
+      list.innerHTML = "";
+      if (!items.length) { empty.style.display = "block"; return; }
+      empty.style.display = "none";
+      items.forEach(p => {
+        const a = document.createElement("a");
+        a.href = `product.html?id=${p.id}`;
+        a.className = "product-card";
+        a.innerHTML = `
+          <div class="thumb">${p.imageUrl ? `<img src="${p.imageUrl}" alt="" style="width:100%;height:100%;object-fit:cover">` : "Image"}</div>
+          <div class="body">
+            <div class="name">${p.name || "Produit"}</div>
+            <div class="price">${p.priceXof ? Number(p.priceXof).toLocaleString("fr-FR") + " XOF" : "—"}</div>
+          </div>`;
+        list.appendChild(a);
+      });
+    }
+
+    document.getElementById("search").addEventListener("input", (e) => {
+      const q = e.target.value.toLowerCase();
+      render(products.filter(p => (p.name || "").toLowerCase().includes(q)));
+    });
+
+    load();
+  </script>
+</body>
+</html>

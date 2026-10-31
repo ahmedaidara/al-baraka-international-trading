@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
+  <meta name="theme-color" content="#0B3D2E" />
+  <title>ABIT — Commandes</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/design-system.css" />
+</head>
+<body>
+  <div class="page-content">
+    <header class="app-header">
+      <div class="container"><div class="logo">Mes commandes</div></div>
+    </header>
+    <main class="container" style="padding-top:var(--space-5)">
+      <div id="guest" class="card" style="display:none;text-align:center;padding:var(--space-8)">
+        <p style="margin-bottom:var(--space-4);color:var(--abit-gray-600)">Connectez-vous pour voir vos commandes.</p>
+        <a href="login.html" class="btn btn-primary">Se connecter</a>
+      </div>
+      <div id="list"></div>
+      <div id="empty" class="empty-state" style="display:none">
+        <p>Aucune commande pour le moment.</p>
+        <a href="shop.html" class="btn btn-outline" style="margin-top:var(--space-4)">Voir la boutique</a>
+      </div>
+    </main>
+  </div>
+  <nav class="bottom-nav">
+    <a href="index.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Accueil</a>
+    <a href="exchange.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 16V4M7 4L3 8M7 4l4 4M17 8v12M17 20l4-4M17 20l-4-4"/></svg>Échange</a>
+    <a href="shop.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/></svg>Boutique</a>
+    <a href="orders.html" class="active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Commandes</a>
+    <a href="profile.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Profil</a>
+  </nav>
+  <script type="module">
+    import { auth, db, onAuthStateChanged } from "./js/firebase-init.js";
+    import { collection, query, where, getDocs, orderBy } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        document.getElementById("guest").style.display = "block";
+        return;
+      }
+      try {
+        const q = query(collection(db, "orders"), where("userId", "==", user.uid));
+        const snap = await getDocs(q);
+        const list = document.getElementById("list");
+        if (snap.empty) {
+          document.getElementById("empty").style.display = "block";
+          return;
+        }
+        snap.forEach(d => {
+          const o = d.data();
+          const el = document.createElement("a");
+          el.href = `tracking.html?order=${d.id}`;
+          el.className = "card";
+          el.style.display = "block";
+          el.style.marginBottom = "var(--space-3)";
+          el.innerHTML = `
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <div>
+                <div style="font-weight:600;font-size:0.95rem">${o.orderNumber || d.id.slice(0,8).toUpperCase()}</div>
+                <div style="font-size:0.8rem;color:var(--abit-gray-400);margin-top:2px">${o.status || "reçu"}</div>
+              </div>
+              <span class="badge badge-info">${o.status || "en cours"}</span>
+            </div>`;
+          list.appendChild(el);
+        });
+      } catch {
+        document.getElementById("empty").style.display = "block";
+      }
+    });
+  </script>
+</body>
+</html>

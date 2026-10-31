@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
+  <meta name="theme-color" content="#0B3D2E" />
+  <title>ABIT — Panier</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/design-system.css" />
+</head>
+<body>
+  <div class="page-content">
+    <header class="app-header">
+      <div class="container" style="display:flex;align-items:center;gap:var(--space-3)">
+        <a href="shop.html" style="color:white">←</a>
+        <div class="logo">Panier</div>
+      </div>
+    </header>
+    <main class="container" style="padding-top:var(--space-5)">
+      <div id="empty" class="empty-state">
+        <p>Votre panier est vide.</p>
+        <a href="shop.html" class="btn btn-primary" style="margin-top:var(--space-4)">Parcourir la boutique</a>
+      </div>
+      <div id="cart-content" style="display:none">
+        <div id="items"></div>
+        <div class="card" style="margin-top:var(--space-4)">
+          <div style="display:flex;justify-content:space-between;font-weight:700;font-size:1.05rem">
+            <span>Total estimé</span><span id="total">0 XOF</span>
+          </div>
+          <p style="font-size:0.8rem;color:var(--abit-gray-400);margin-top:var(--space-2)">Frais de livraison confirmés à la commande.</p>
+          <a href="checkout.html" class="btn btn-primary btn-block" style="margin-top:var(--space-4)">Passer commande</a>
+        </div>
+      </div>
+    </main>
+  </div>
+  <script type="module">
+    // Panier localStorage (simple, recalcul serveur à la commande)
+    const cart = JSON.parse(localStorage.getItem("abit_cart") || "[]");
+    const empty = document.getElementById("empty");
+    const content = document.getElementById("cart-content");
+    if (!cart.length) { empty.style.display = "block"; }
+    else {
+      empty.style.display = "none";
+      content.style.display = "block";
+      let total = 0;
+      const items = document.getElementById("items");
+      cart.forEach((item, i) => {
+        total += (item.priceXof || 0) * (item.qty || 1);
+        const el = document.createElement("div");
+        el.className = "card";
+        el.style.marginBottom = "var(--space-3)";
+        el.innerHTML = `
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div>
+              <div style="font-weight:600">${item.name}</div>
+              <div style="font-size:0.85rem;color:var(--abit-gray-400)">× ${item.qty || 1}</div>
+            </div>
+            <div style="font-weight:600;color:var(--abit-green)">${((item.priceXof||0)*(item.qty||1)).toLocaleString("fr-FR")} XOF</div>
+          </div>`;
+        items.appendChild(el);
+      });
+      document.getElementById("total").textContent = total.toLocaleString("fr-FR") + " XOF";
+    }
+  </script>
+</body>
+</html>

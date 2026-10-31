@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
+  <meta name="theme-color" content="#0B3D2E" />
+  <title>ABIT — Produit</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/design-system.css" />
+</head>
+<body>
+  <div class="page-content">
+    <header class="app-header">
+      <div class="container" style="display:flex;align-items:center;gap:var(--space-3)">
+        <a href="shop.html" style="color:white">←</a>
+        <div class="logo">Produit</div>
+      </div>
+    </header>
+    <main class="container" style="padding-top:var(--space-4)">
+      <div id="loading" style="text-align:center;padding:var(--space-10)"><div class="spinner" style="margin:0 auto"></div></div>
+      <div id="content" style="display:none">
+        <div id="img" style="aspect-ratio:1;background:var(--abit-gray-50);border-radius:var(--radius-lg);margin-bottom:var(--space-4);overflow:hidden;display:flex;align-items:center;justify-content:center;color:var(--abit-gray-400)">Image</div>
+        <h1 id="name" style="font-size:1.25rem;font-weight:700;margin-bottom:var(--space-2)"></h1>
+        <div id="price" style="font-size:1.35rem;font-weight:700;color:var(--abit-green);margin-bottom:var(--space-4)"></div>
+        <p id="desc" style="font-size:0.95rem;color:var(--abit-gray-600);line-height:1.6;margin-bottom:var(--space-5)"></p>
+        <div class="form-group">
+          <label class="form-label">Quantité</label>
+          <input type="number" id="qty" class="form-input" value="1" min="1" />
+        </div>
+        <button class="btn btn-primary btn-block" id="add">Ajouter au panier</button>
+        <p id="msg" style="margin-top:var(--space-3);font-size:0.9rem;color:var(--status-success);display:none">Ajouté au panier.</p>
+      </div>
+      <div id="err" class="empty-state" style="display:none"><p>Produit introuvable.</p></div>
+    </main>
+  </div>
+  <script type="module">
+    import { db } from "./js/firebase-init.js";
+    import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+    const id = new URLSearchParams(location.search).get("id");
+    if (!id) { document.getElementById("loading").style.display = "none"; document.getElementById("err").style.display = "block"; }
+    else {
+      try {
+        const snap = await getDoc(doc(db, "products", id));
+        document.getElementById("loading").style.display = "none";
+        if (!snap.exists()) { document.getElementById("err").style.display = "block"; }
+        else {
+          const p = snap.data();
+          document.getElementById("content").style.display = "block";
+          document.getElementById("name").textContent = p.name || "Produit";
+          document.getElementById("price").textContent = p.priceXof ? Number(p.priceXof).toLocaleString("fr-FR") + " XOF" : "—";
+          document.getElementById("desc").textContent = p.description || "";
+          if (p.imageUrl) document.getElementById("img").innerHTML = `<img src="${p.imageUrl}" alt="" style="width:100%;height:100%;object-fit:cover">`;
+          document.getElementById("add").addEventListener("click", () => {
+            const cart = JSON.parse(localStorage.getItem("abit_cart") || "[]");
+            const qty = Number(document.getElementById("qty").value) || 1;
+            const existing = cart.find(c => c.id === id);
+            if (existing) existing.qty += qty;
+            else cart.push({ id, name: p.name, priceXof: p.priceXof, qty });
+            localStorage.setItem("abit_cart", JSON.stringify(cart));
+            document.getElementById("msg").style.display = "block";
+          });
+        }
+      } catch {
+        document.getElementById("loading").style.display = "none";
+        document.getElementById("err").style.display = "block";
+      }
+    }
+  </script>
+</body>
+</html>

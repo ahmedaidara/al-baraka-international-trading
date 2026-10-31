@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#0B3D2E" />
   <title>ABIT — Inscription</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="../shared/css/design-system.css" />
+  <link rel="stylesheet" href="css/design-system.css" />
 </head>
 <body>
   <div class="page-content" style="display:flex;flex-direction:column;min-height:100dvh">
@@ -16,11 +16,9 @@
         <div class="logo">ABIT</div>
       </div>
     </header>
-
     <main class="container" style="flex:1;padding-top:var(--space-8)">
       <h1 style="font-size:1.5rem;font-weight:700;margin-bottom:var(--space-2)">Créer un compte</h1>
       <p style="color:var(--abit-gray-600);margin-bottom:var(--space-6)">Rejoignez ABIT pour échanger et commander.</p>
-
       <div class="card">
         <div class="form-group">
           <label class="form-label">Nom complet</label>
@@ -41,20 +39,14 @@
         <button class="btn btn-primary btn-block" id="btn-register">S’inscrire</button>
         <p id="error" style="color:var(--status-error);font-size:0.85rem;margin-top:var(--space-3);display:none"></p>
       </div>
-
       <p style="text-align:center;margin-top:var(--space-6);font-size:0.9rem">
         Déjà un compte ? <a href="login.html" style="color:var(--abit-green);font-weight:600">Se connecter</a>
       </p>
     </main>
   </div>
-
   <script type="module">
-    import { auth, createUserWithEmailAndPassword, createClientProfile, onAuthStateChanged } from "../shared/js/firebase-init.js";
-
-    onAuthStateChanged(auth, (user) => {
-      if (user) window.location.href = "index.html";
-    });
-
+    import { auth, createUserWithEmailAndPassword, createClientProfile, onAuthStateChanged } from "./js/firebase-init.js";
+    onAuthStateChanged(auth, (user) => { if (user) location.href = "index.html"; });
     document.getElementById("btn-register").addEventListener("click", async () => {
       const name = document.getElementById("name").value.trim();
       const phone = document.getElementById("phone").value.trim();
@@ -62,23 +54,16 @@
       const password = document.getElementById("password").value;
       const err = document.getElementById("error");
       err.style.display = "none";
-
       if (!name || !email || password.length < 6) {
         err.textContent = "Remplissez tous les champs (mot de passe min. 6 caractères).";
-        err.style.display = "block";
-        return;
+        err.style.display = "block"; return;
       }
-
       try {
         const cred = await createUserWithEmailAndPassword(auth, email, password);
         await createClientProfile(cred.user, { displayName: name, phone });
-        window.location.href = "index.html";
+        location.href = "index.html";
       } catch (e) {
-        if (e.code === "auth/email-already-in-use") {
-          err.textContent = "Cet email est déjà utilisé.";
-        } else {
-          err.textContent = "Erreur lors de l’inscription. Réessayez.";
-        }
+        err.textContent = e.code === "auth/email-already-in-use" ? "Cet email est déjà utilisé." : "Erreur lors de l’inscription.";
         err.style.display = "block";
       }
     });
