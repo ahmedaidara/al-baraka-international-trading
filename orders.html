@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
+  <meta name="theme-color" content="#0B3D2E" />
+  <title>ABIT — Mes commandes</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/design-system.css" />
+  <style>
+    .tabs {
+      display: flex; gap: 6px; margin-bottom: var(--space-4);
+      overflow-x: auto; -webkit-overflow-scrolling: touch;
+    }
+    .tab {
+      flex-shrink: 0; padding: 8px 14px; border-radius: var(--radius-full);
+      font-size: 0.8rem; font-weight: 600; background: white;
+      border: 1px solid var(--abit-gray-200); color: var(--abit-gray-600);
+    }
+    .tab.active { background: var(--abit-green); color: white; border-color: var(--abit-green); }
+    .order-card {
+      display: block; background: white; border-radius: var(--radius-lg);
+      border: 1px solid var(--abit-gray-100); box-shadow: var(--shadow-sm);
+      padding: var(--space-4); margin-bottom: var(--space-3);
+    }
+    .order-top { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--space-3); }
+    .order-id { font-weight: 700; font-size: 0.95rem; letter-spacing: -0.01em; }
+    .order-date { font-size: 0.75rem; color: var(--abit-gray-400); margin-top: 3px; }
+    .order-bottom {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-top: var(--space-3); padding-top: var(--space-3);
+      border-top: 1px solid var(--abit-gray-100);
+    }
+    .order-total { font-weight: 700; color: var(--abit-green); font-size: 0.95rem; }
+    .order-items { font-size: 0.8rem; color: var(--abit-gray-600); margin-top: var(--space-2); }
+  </style>
+</head>
+<body>
+  <div class="page-content">
+    <header class="app-header">
+      <div class="container">
+        <div class="logo">Mes commandes</div>
+        <p style="font-size:0.8rem;opacity:0.85;margin-top:2px">Suivi et historique</p>
+      </div>
+    </header>
+
+    <main class="container" style="padding-top:var(--space-4)">
+      <div id="guest" style="display:none">
+        <div class="card" style="text-align:center;padding:var(--space-8)">
+          <p style="font-weight:600;margin-bottom:var(--space-2)">Connectez-vous</p>
+          <p style="color:var(--abit-gray-600);font-size:0.9rem;margin-bottom:var(--space-5)">
+            Vos commandes sont liées à votre compte ABIT.
+          </p>
+          <a href="login.html" class="btn btn-primary btn-block">Se connecter</a>
+          <p style="margin-top:var(--space-4);font-size:0.9rem">
+            <a href="register.html" style="color:var(--abit-green);font-weight:600">Créer un compte</a>
+          </p>
+        </div>
+      </div>
+
+      <div id="user-view" style="display:none">
+        <div class="tabs">
+          <button type="button" class="tab active" data-filter="all">Toutes</button>
+          <button type="button" class="tab" data-filter="active">En cours</button>
+          <button type="button" class="tab" data-filter="done">Terminées</button>
+        </div>
+
+        <div id="loading" style="text-align:center;padding:var(--space-8)">
+          <div class="spinner" style="margin:0 auto"></div>
+        </div>
+
+        <div id="list"></div>
+
+        <div id="empty" class="empty-state" style="display:none">
+          <p style="font-weight:600;color:var(--abit-gray-600)">Aucune commande</p>
+          <p style="font-size:0.85rem;margin-top:var(--space-2)">Parcourez la boutique pour passer votre première commande.</p>
+          <a href="shop.html" class="btn btn-primary" style="margin-top:var(--space-5)">Voir la boutique</a>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <nav class="bottom-nav">
+    <a href="index.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      Accueil
+    </a>
+    <a href="exchange.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 16V4M7 4L3 8M7 4l4 4M17 8v12M17 20l4-4M17 20l-4-4"/></svg>
+      Échange
+    </a>
+    <a href="shop.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/></svg>
+      Boutique
+    </a>
+    <a href="orders.html" class="active">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      Commandes
+    </a>
+    <a href="profile.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      Profil
+    </a>
+  </nav>
+
+  <script type="module">
+    import { auth, db, onAuthStateChanged } from "./js/firebase-init.js";
+    import { collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+
+    let orders = [];
+    let filter = "all";
+
+    const STATUS_LABEL = {
+      received: "Reçue",
+      pending_payment: "Paiement à confirmer",
+      confirmed: "Confirmée",
+      sourcing: "Approvisionnement",
+      shipped: "Expédiée",
+      in_transit: "En transit",
+      arrived_sn: "Au Sénégal",
+      delivering: "Livraison",
+      delivered: "Livrée",
+      cancelled: "Annulée",
+      refused: "Refusée"
+    };
+
+    const DONE = new Set(["delivered", "cancelled", "refused"]);
+
+    function badgeClass(status) {
+      if (status === "delivered") return "badge-success";
+      if (status === "cancelled" || status === "refused") return "badge-pending";
+      return "badge-info";
+    }
+
+    function formatDate(ts) {
+      if (!ts) return "";
+      const d = ts.toDate ? ts.toDate() : new Date(ts);
+      return d.toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" });
+    }
+
+    function render() {
+      const list = document.getElementById("list");
+      const empty = document.getElementById("empty");
+      list.innerHTML = "";
+
+      let items = orders;
+      if (filter === "active") items = orders.filter(o => !DONE.has(o.status || "received"));
+      if (filter === "done") items = orders.filter(o => DONE.has(o.status || ""));
+
+      if (!items.length) {
+        empty.style.display = "block";
+        return;
+      }
+      empty.style.display = "none";
+
+      items.forEach(o => {
+        const status = o.status || "received";
+        const itemsCount = Array.isArray(o.items) ? o.items.reduce((s, i) => s + (i.qty || 1), 0) : 0;
+        const a = document.createElement("a");
+        a.href = `tracking.html?order=${encodeURIComponent(o.id)}`;
+        a.className = "order-card";
+        a.innerHTML = `
+          <div class="order-top">
+            <div>
+              <div class="order-id">${o.orderNumber || o.id.slice(0, 10).toUpperCase()}</div>
+              <div class="order-date">${formatDate(o.createdAt)}</div>
+            </div>
+            <span class="badge ${badgeClass(status)}">${STATUS_LABEL[status] || status}</span>
+          </div>
+          ${itemsCount ? `<div class="order-items">${itemsCount} article${itemsCount > 1 ? "s" : ""}</div>` : ""}
+          <div class="order-bottom">
+            <span class="order-total">${o.totalXof != null ? Number(o.totalXof).toLocaleString("fr-FR") + " XOF" : "—"}</span>
+            <span style="font-size:0.8rem;color:var(--abit-green);font-weight:600">Suivre →</span>
+          </div>`;
+        list.appendChild(a);
+      });
+    }
+
+    document.querySelectorAll(".tab").forEach(tab => {
+      tab.addEventListener("click", () => {
+        document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+        tab.classList.add("active");
+        filter = tab.dataset.filter;
+        render();
+      });
+    });
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        document.getElementById("guest").style.display = "block";
+        document.getElementById("user-view").style.display = "none";
+        return;
+      }
+      document.getElementById("guest").style.display = "none";
+      document.getElementById("user-view").style.display = "block";
+
+      try {
+        const q = query(collection(db, "orders"), where("userId", "==", user.uid));
+        const snap = await getDocs(q);
+        orders = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        orders.sort((a, b) => (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0));
+        document.getElementById("loading").style.display = "none";
+        render();
+      } catch (e) {
+        console.warn(e);
+        document.getElementById("loading").style.display = "none";
+        document.getElementById("empty").style.display = "block";
+      }
+    });
+  </script>
+</body>
+</html>
