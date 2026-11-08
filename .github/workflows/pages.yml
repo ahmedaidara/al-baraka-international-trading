@@ -1,4 +1,4 @@
-name: Deploy client to GitHub Pages
+name: Deploy to GitHub Pages
 
 on:
   push:
@@ -22,12 +22,26 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Prepare site root
+        run: |
+          mkdir -p _site
+          # Appli à la racine du site (pas le README)
+          cp index.html _site/ || true
+          cp -r css js _site/ 2>/dev/null || true
+          # Pages client complètes
+          cp client/*.html _site/ 2>/dev/null || true
+          cp -r client/css client/js _site/ 2>/dev/null || true
+          cp client/manifest.webmanifest client/sw.js _site/ 2>/dev/null || true
+          touch _site/.nojekyll
+          # S’assurer que index.html est l’app (écrase si besoin)
+          if [ -f index.html ]; then cp index.html _site/index.html; fi
+          ls -la _site
       - name: Setup Pages
         uses: actions/configure-pages@v4
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: client
+          path: _site
       - name: Deploy
         id: deployment
         uses: actions/deploy-pages@v4
