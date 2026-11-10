@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
+  <meta name="theme-color" content="#0B3D2E" />
+  <title>ABIT — Panier</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/design-system.css?v=12" />
+  <style>
+    .cart-item {
+      display: flex; gap: 12px; padding: 14px 0;
+      border-bottom: 1px solid var(--abit-gray-100);
+    }
+    .cart-item img, .cart-ph {
+      width: 72px; height: 72px; border-radius: 10px; object-fit: cover;
+      background: #E5EAE8; flex-shrink: 0;
+    }
+    .cart-ph {
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.65rem; color: var(--abit-gray-400);
+    }
+    .qty-mini {
+      display: inline-flex; align-items: center; gap: 8px; margin-top: 8px;
+    }
+    .qty-mini button {
+      width: 28px; height: 28px; border-radius: 8px; border: 1px solid var(--abit-gray-200);
+      background: #fff; font-weight: 700;
+    }
+    .total-box {
+      position: sticky; bottom: calc(64px + env(safe-area-inset-bottom));
+      background: #fff; border-top: 1px solid var(--abit-gray-100);
+      padding: 14px 16px; margin: 0 -16px;
+    }
+  </style>
+</head>
+<body>
+  <div class="page-content">
+    <header class="app-header">
+      <div class="container" style="display:flex;align-items:center;gap:12px">
+        <a href="shop.html" style="color:#fff;font-size:1.4rem">‹</a>
+        <div class="logo">Panier</div>
+      </div>
+    </header>
+
+    <main class="container" style="padding-top:var(--space-4)">
+      <div id="empty" class="empty-state" style="display:none">
+        <p style="font-weight:600">Votre panier est vide</p>
+        <a href="shop.html" class="btn btn-primary" style="margin-top:16px">Voir la boutique</a>
+      </div>
+
+      <div id="list"></div>
+
+      <div class="total-box" id="total-box" style="display:none">
+        <div style="display:flex;justify-content:space-between;margin-bottom:12px">
+          <span style="font-weight:600">Total</span>
+          <span id="total" style="font-weight:700;color:var(--abit-green);font-size:1.15rem">0 XOF</span>
+        </div>
+        <button type="button" class="btn btn-primary btn-block" id="btn-order">Passer la commande</button>
+        <p style="font-size:0.75rem;color:var(--abit-gray-400);margin-top:8px;text-align:center">
+          Validation manuelle par ABIT apres confirmation
+        </p>
+      </div>
+    </main>
+  </div>
+
+  <nav class="bottom-nav">
+    <a href="index.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      Accueil
+    </a>
+    <a href="exchange.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 16V4M7 4L3 8M7 4l4 4M17 8v12M17 20l4-4M17 20l-4-4"/></svg>
+      Echange
+    </a>
+    <a href="shop.html" class="active">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/></svg>
+      Boutique
+    </a>
+    <a href="orders.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      Commandes
+    </a>
+    <a href="profile.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      Profil
+    </a>
+  </nav>
+
+  <script type="module">
+    function getCart() {
+      try { return JSON.parse(localStorage.getItem("abit_cart") || "[]"); }
+      catch (e) { return []; }
+    }
+    function saveCart(cart) {
+      localStorage.setItem("abit_cart", JSON.stringify(cart));
+      render();
+    }
+
+    function render() {
+      var cart = getCart();
+      var list = document.getElementById("list");
+      var empty = document.getElementById("empty");
+      var totalBox = document.getElementById("total-box");
+      list.innerHTML = "";
+
+      if (!cart.length) {
+        empty.style.display = "block";
+        totalBox.style.display = "none";
+        return;
+      }
+      empty.style.display = "none";
+      totalBox.style.display = "block";
+
+      var total = 0;
+      cart.forEach(function (item, idx) {
+        total += (item.priceXof || 0) * (item.qty || 1);
+        var row = document.createElement("div");
+        row.className = "cart-item";
+
+        if (item.imageUrl) {
+          var img = document.createElement("img");
+          img.src = item.imageUrl;
+          img.alt = "";
+          row.appendChild(img);
+        } else {
+          var ph = document.createElement("div");
+          ph.className = "cart-ph";
+          ph.textContent = "—";
+          row.appendChild(ph);
+        }
+
+        var info = document.createElement("div");
+        info.style.flex = "1";
+        info.style.minWidth = "0";
+
+        var name = document.createElement("div");
+        name.style.fontWeight = "600";
+        name.style.fontSize = "0.95rem";
+        name.textContent = item.name || "Produit";
+
+        var price = document.createElement("div");
+        price.style.fontSize = "0.85rem";
+        price.style.color = "var(--abit-green)";
+        price.style.fontWeight = "700";
+        price.style.marginTop = "4px";
+        price.textContent = Number(item.priceXof || 0).toLocaleString("fr-FR") + " XOF";
+
+        var qtyRow = document.createElement("div");
+        qtyRow.className = "qty-mini";
+
+        var minus = document.createElement("button");
+        minus.type = "button";
+        minus.textContent = "−";
+        minus.addEventListener("click", function () {
+          var c = getCart();
+          if ((c[idx].qty || 1) <= 1) c.splice(idx, 1);
+          else c[idx].qty -= 1;
+          saveCart(c);
+        });
+
+        var q = document.createElement("span");
+        q.style.fontWeight = "700";
+        q.textContent = String(item.qty || 1);
+
+        var plus = document.createElement("button");
+        plus.type = "button";
+        plus.textContent = "+";
+        plus.addEventListener("click", function () {
+          var c = getCart();
+          c[idx].qty = (c[idx].qty || 1) + 1;
+          saveCart(c);
+        });
+
+        var rm = document.createElement("button");
+        rm.type = "button";
+        rm.textContent = "Retirer";
+        rm.style.marginLeft = "8px";
+        rm.style.fontSize = "0.75rem";
+        rm.style.color = "#B91C1C";
+        rm.style.border = "none";
+        rm.addEventListener("click", function () {
+          var c = getCart();
+          c.splice(idx, 1);
+          saveCart(c);
+        });
+
+        qtyRow.appendChild(minus);
+        qtyRow.appendChild(q);
+        qtyRow.appendChild(plus);
+        qtyRow.appendChild(rm);
+
+        info.appendChild(name);
+        info.appendChild(price);
+        info.appendChild(qtyRow);
+        row.appendChild(info);
+        list.appendChild(row);
+      });
+
+      document.getElementById("total").textContent =
+        total.toLocaleString("fr-FR") + " XOF";
+    }
+
+    document.getElementById("btn-order").addEventListener("click", function () {
+      alert("Commande : connecte-toi ou cree un compte pour finaliser. Prochaine etape : enregistrement Firestore des commandes.");
+      location.href = "login.html";
+    });
+
+    render();
+  </script>
+</body>
+</html>
