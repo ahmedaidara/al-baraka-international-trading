@@ -2,48 +2,33 @@ rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
 
-    function isSignedIn() {
-      return request.auth != null;
-    }
-
-    function isAdmin() {
-      return isSignedIn() && (
-        request.auth.token.admin == true ||
-        firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.role == 'admin'
-      );
-    }
+    // MODE DÉVELOPPEMENT — écriture ouverte (à restreindre avant prod)
 
     match /products/{allPaths=**} {
       allow read: if true;
-      allow write: if isAdmin()
-                  && request.resource.size < 5 * 1024 * 1024
+      allow write: if request.resource.size < 5 * 1024 * 1024
                   && request.resource.contentType.matches('image/.*');
     }
 
     match /exchange-proofs/{userId}/{allPaths=**} {
-      allow read: if isSignedIn() && (request.auth.uid == userId || isAdmin());
-      allow write: if isSignedIn()
-                   && request.auth.uid == userId
-                   && request.resource.size < 5 * 1024 * 1024
-                   && request.resource.contentType.matches('image/.*|application/pdf');
+      allow read: if true;
+      allow write: if request.resource.size < 5 * 1024 * 1024
+                  && request.resource.contentType.matches('image/.*|application/pdf');
     }
 
     match /tracking/{allPaths=**} {
-      allow read: if isSignedIn();
-      allow write: if isAdmin()
-                   && request.resource.size < 5 * 1024 * 1024;
+      allow read: if true;
+      allow write: if request.resource.size < 5 * 1024 * 1024;
     }
 
     match /avatars/{userId} {
       allow read: if true;
-      allow write: if isSignedIn()
-                   && request.auth.uid == userId
-                   && request.resource.size < 2 * 1024 * 1024
-                   && request.resource.contentType.matches('image/.*');
+      allow write: if request.resource.size < 2 * 1024 * 1024
+                  && request.resource.contentType.matches('image/.*');
     }
 
     match /{allPaths=**} {
-      allow read, write: if false;
+      allow read, write: if true;
     }
   }
 }
