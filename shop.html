@@ -4,9 +4,12 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
   <meta name="theme-color" content="#0B3D2E" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
   <title>ABIT — Boutique</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="css/design-system.css" />
+  <link rel="stylesheet" href="css/design-system.css?v=11" />
   <style>
     .search-wrap { position: relative; margin-bottom: var(--space-4); }
     .search-wrap input { padding-left: 2.75rem; }
@@ -21,25 +24,57 @@
       border: 1px solid var(--abit-gray-200); color: var(--abit-gray-600);
     }
     .chip.active { background: var(--abit-green); color: white; border-color: var(--abit-green); }
-    .product-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3); }
+    .product-grid {
+      display: grid !important;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--space-3);
+      min-height: 40px;
+    }
     .product-card {
-      background: white; border-radius: var(--radius-lg); overflow: hidden;
-      border: 1px solid var(--abit-gray-100); box-shadow: var(--shadow-sm);
-      display: flex; flex-direction: column;
+      background: #fff;
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      border: 1px solid var(--abit-gray-100);
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      flex-direction: column;
+      min-height: 180px;
     }
     .product-card .thumb {
-      aspect-ratio: 1; background: linear-gradient(145deg, #F1F4F3, #E5EAE8);
-      display: flex; align-items: center; justify-content: center;
-      color: var(--abit-gray-400); font-size: 0.75rem;
+      aspect-ratio: 1;
+      background: linear-gradient(145deg, #F1F4F3, #E5EAE8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--abit-gray-400);
+      font-size: 0.75rem;
     }
     .product-card .thumb img { width: 100%; height: 100%; object-fit: cover; }
     .product-card .body { padding: var(--space-3); flex: 1; display: flex; flex-direction: column; }
     .product-card .name {
-      font-size: 0.85rem; font-weight: 600; margin-bottom: 6px; line-height: 1.3;
-      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-bottom: 6px;
+      line-height: 1.3;
+      color: #2A322F;
     }
-    .product-card .price { font-size: 0.95rem; font-weight: 700; color: var(--abit-green); margin-top: auto; }
+    .product-card .price {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #0B3D2E;
+      margin-top: auto;
+    }
     .product-card .meta { font-size: 0.7rem; color: var(--abit-gray-400); margin-top: 4px; }
+    .status-bar {
+      background: #E8F5F0;
+      color: #0B3D2E;
+      font-size: 0.8rem;
+      font-weight: 600;
+      padding: 10px 14px;
+      border-radius: var(--radius-md);
+      margin-bottom: var(--space-4);
+      border: 1px solid #C6E4;
+    }
     .cart-badge {
       background: var(--abit-gold); color: var(--abit-green-dark);
       font-size: 0.7rem; font-weight: 700; min-width: 18px; height: 18px;
@@ -63,6 +98,8 @@
     </header>
 
     <main class="container" style="padding-top:var(--space-4)">
+      <div class="status-bar" id="status-bar">Connexion au catalogue...</div>
+
       <div class="search-wrap">
         <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.3-4.3"/></svg>
         <input type="search" id="search" class="form-input" placeholder="Rechercher un produit" />
@@ -80,10 +117,8 @@
       <div id="list" class="product-grid" style="display:none"></div>
 
       <div id="empty" class="empty-state" style="display:none">
-        <p style="font-size:1rem;font-weight:600;color:var(--abit-gray-600)" id="empty-title">Aucun produit pour le moment</p>
-        <p style="font-size:0.85rem;margin-top:var(--space-2);max-width:280px;margin-left:auto;margin-right:auto" id="empty-sub">
-          Les articles publies depuis l administration apparaissent ici.
-        </p>
+        <p style="font-size:1rem;font-weight:600;color:var(--abit-gray-600)" id="empty-title">Aucun produit</p>
+        <p style="font-size:0.85rem;margin-top:var(--space-2)" id="empty-sub">Ajoute un produit depuis l admin.</p>
       </div>
     </main>
   </div>
@@ -112,6 +147,13 @@
   </nav>
 
   <script type="module">
+    // Anti service-worker cache
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.getRegistrations().then(function (regs) {
+        regs.forEach(function (r) { r.unregister(); });
+      });
+    }
+
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
     import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
@@ -132,8 +174,13 @@
     const emptyEl = document.getElementById("empty");
     const loadingEl = document.getElementById("loading");
     const chipsEl = document.getElementById("chips");
+    const statusBar = document.getElementById("status-bar");
     let products = [];
     let activeCat = "";
+
+    function setStatus(text) {
+      statusBar.textContent = text;
+    }
 
     function cartCount() {
       try {
@@ -145,12 +192,6 @@
           badge.textContent = String(n);
         }
       } catch (e) {}
-    }
-
-    function escapeHtml(s) {
-      var div = document.createElement("div");
-      div.textContent = String(s);
-      return div.innerHTML;
     }
 
     function isPublished(p) {
@@ -210,10 +251,13 @@
       if (!items.length) {
         listEl.style.display = "none";
         emptyEl.style.display = "block";
+        setStatus("Aucun produit pour ce filtre");
         return;
       }
       emptyEl.style.display = "none";
       listEl.style.display = "grid";
+      setStatus(items.length + " produit(s) affiche(s)");
+
       items.forEach(function (p) {
         var a = document.createElement("a");
         a.href = "product.html?id=" + encodeURIComponent(p.id);
@@ -224,7 +268,7 @@
         if (p.imageUrl) {
           var img = document.createElement("img");
           img.src = p.imageUrl;
-          img.alt = "";
+          img.alt = p.name || "";
           img.loading = "lazy";
           thumb.appendChild(img);
         } else {
@@ -250,7 +294,7 @@
         if (p.deliveryDelay) {
           var meta = document.createElement("div");
           meta.className = "meta";
-          meta.textContent = p.deliveryDelay;
+          meta.textContent = String(p.deliveryDelay);
           body.appendChild(meta);
         }
 
@@ -266,9 +310,11 @@
       emptyEl.style.display = "block";
       document.getElementById("empty-title").textContent = title;
       document.getElementById("empty-sub").textContent = sub;
+      setStatus(title);
     }
 
     async function load() {
+      setStatus("Lecture Firebase (products)...");
       try {
         var snap = await getDocs(collection(db, "products"));
         var all = [];
@@ -277,6 +323,8 @@
           data.id = d.id;
           all.push(data);
         });
+
+        setStatus(all.length + " document(s) trouves dans products");
 
         products = all.filter(isPublished);
 
@@ -290,10 +338,10 @@
 
         if (!products.length) {
           showEmpty(
-            all.length ? "Aucun produit publie" : "Aucun produit pour le moment",
+            all.length ? "Produits non publies" : "Collection vide",
             all.length
-              ? "Des produits existent mais ne sont pas marques publies."
-              : "Ajoute un article depuis l administration."
+              ? "Firestore a " + all.length + " produit(s) mais published=false."
+              : "Aucun document dans la collection products."
           );
           return;
         }
@@ -303,8 +351,8 @@
       } catch (e) {
         console.error("Boutique load error:", e);
         showEmpty(
-          "Catalogue indisponible",
-          e && e.message ? String(e.message) : "Erreur Firebase"
+          "Erreur Firebase",
+          e && e.message ? String(e.message) : "Erreur inconnue"
         );
       }
     }
@@ -316,8 +364,8 @@
     setTimeout(function () {
       if (loadingEl.style.display !== "none") {
         showEmpty(
-          "Chargement trop long",
-          "Firebase ne repond pas. Verifie les regles Firestore."
+          "Timeout Firebase",
+          "Pas de reponse apres 15s. Verifie regles Firestore et reseau."
         );
       }
     }, 15000);
