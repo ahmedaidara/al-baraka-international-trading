@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
+  <meta name="theme-color" content="#0B3D2E" />
+  <title>ABIT — Inscription</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/design-system.css" />
+</head>
+<body>
+  <div class="page-content" style="display:flex;flex-direction:column;min-height:100dvh">
+    <header class="app-header">
+      <div class="container" style="display:flex;align-items:center;gap:var(--space-3)">
+        <a href="index.html" style="color:white;font-size:1.25rem">&larr;</a>
+        <div class="logo">ABIT</div>
+      </div>
+    </header>
+    <main class="container" style="flex:1;padding-top:var(--space-6)">
+      <h1 style="font-size:1.5rem;font-weight:700;margin-bottom:var(--space-2)">Creer un compte</h1>
+      <p style="color:var(--abit-gray-600);margin-bottom:var(--space-5)">Pour commander et suivre vos echanges.</p>
+      <div class="card">
+        <div class="form-group">
+          <label class="form-label">Nom</label>
+          <input type="text" id="name" class="form-input" placeholder="Votre nom" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Telephone</label>
+          <input type="tel" id="phone" class="form-input" placeholder="+221 ..." />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Email</label>
+          <input type="email" id="email" class="form-input" autocomplete="email" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Mot de passe (min. 6)</label>
+          <input type="password" id="password" class="form-input" autocomplete="new-password" />
+        </div>
+        <button class="btn btn-primary btn-block" id="btn">S'inscrire</button>
+        <p id="error" style="color:var(--status-error);font-size:0.85rem;margin-top:var(--space-3);display:none"></p>
+      </div>
+      <p style="text-align:center;margin-top:var(--space-6);font-size:0.9rem">
+        Deja un compte ? <a href="login.html" style="color:var(--abit-green);font-weight:600">Se connecter</a>
+      </p>
+    </main>
+  </div>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+    import { getAuth, createUserWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+    import { getFirestore, doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+
+    const cfg = {
+      apiKey: "AIzaSyDHSNdIiEsg7XlfgRA3YGZuVVNkkJShnXQ",
+      authDomain: "abit-d927a.firebaseapp.com",
+      projectId: "abit-d927a",
+      storageBucket: "abit-d927a.firebasestorage.app",
+      messagingSenderId: "254745714667",
+      appId: "1:254745714667:web:0ff4451bdd63d680aa03ae"
+    };
+    const app = initializeApp(cfg);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    onAuthStateChanged(auth, function (u) { if (u) location.href = "profile.html"; });
+
+    document.getElementById("btn").addEventListener("click", async function () {
+      var name = document.getElementById("name").value.trim();
+      var phone = document.getElementById("phone").value.trim();
+      var email = document.getElementById("email").value.trim();
+      var password = document.getElementById("password").value;
+      var err = document.getElementById("error");
+      err.style.display = "none";
+      if (!email || password.length < 6) {
+        err.textContent = "Email et mot de passe (6 caracteres min) requis.";
+        err.style.display = "block";
+        return;
+      }
+      try {
+        var cred = await createUserWithEmailAndPassword(auth, email, password);
+        await setDoc(doc(db, "users", cred.user.uid), {
+          uid: cred.user.uid,
+          email: email,
+          displayName: name,
+          phone: phone,
+          role: "client",
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp()
+        });
+        location.href = "profile.html";
+      } catch (e) {
+        err.textContent = (e && e.code === "auth/email-already-in-use")
+          ? "Cet email est deja utilise."
+          : "Impossible de creer le compte.";
+        err.style.display = "block";
+      }
+    });
+  </script>
+</body>
+</html>

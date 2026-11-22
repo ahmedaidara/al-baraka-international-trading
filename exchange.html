@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
+  <meta name="theme-color" content="#0B3D2E" />
+  <title>ABIT — Echange</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/design-system.css" />
+  <style>
+    .rate-box {
+      background: linear-gradient(145deg, #0B3D2E, #146B4E);
+      color: #fff; border-radius: var(--radius-lg); padding: var(--space-5);
+      margin-bottom: var(--space-5); text-align: center;
+    }
+    .rate-box .big { font-size: 1.6rem; font-weight: 700; margin-top: 6px; }
+    .rate-box .sub { font-size: 0.8rem; opacity: 0.85; margin-top: 4px; }
+    .dir-row { display: flex; gap: 8px; margin-bottom: var(--space-4); }
+    .dir-btn {
+      flex: 1; min-height: 44px; border-radius: var(--radius-md);
+      border: 1.5px solid var(--abit-gray-200); background: #fff; font-weight: 600; font-size: 0.85rem;
+    }
+    .dir-btn.active { background: var(--abit-green); color: #fff; border-color: var(--abit-green); }
+  </style>
+</head>
+<body>
+  <div class="page-content">
+    <header class="app-header">
+      <div class="container">
+        <div class="logo">Echange</div>
+        <p style="font-size:0.8rem;opacity:0.85;margin-top:2px">Wave / Orange Money et Alipay / WeChat</p>
+      </div>
+    </header>
+
+    <main class="container" style="padding-top:var(--space-4)">
+      <div class="rate-box">
+        <div style="font-size:0.8rem;opacity:0.85">Taux indicatif</div>
+        <div class="big" id="rate-display">—</div>
+        <div class="sub" id="rate-sub">RMB vers XOF</div>
+      </div>
+
+      <div class="dir-row">
+        <button type="button" class="dir-btn active" data-dir="rmb_to_xof">RMB → XOF</button>
+        <button type="button" class="dir-btn" data-dir="xof_to_rmb">XOF → RMB</button>
+      </div>
+
+      <div class="card">
+        <div class="form-group">
+          <label class="form-label" id="amount-label">Montant RMB</label>
+          <input type="number" id="amount" class="form-input" min="1" placeholder="100" />
+        </div>
+        <div style="background:#F1F4F3;border-radius:10px;padding:12px;margin-bottom:var(--space-4)">
+          <div style="font-size:0.75rem;color:var(--abit-gray-400)">Vous recevez environ</div>
+          <div id="result" style="font-size:1.25rem;font-weight:700;color:var(--abit-green)">—</div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Moyen de paiement (Sénégal)</label>
+          <select id="pay-sn" class="form-select">
+            <option value="wave">Wave</option>
+            <option value="orange_money">Orange Money</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Moyen de reception (Chine)</label>
+          <select id="pay-cn" class="form-select">
+            <option value="alipay">Alipay</option>
+            <option value="wechat">WeChat Pay</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Votre contact (tel / compte)</label>
+          <input type="text" id="contact" class="form-input" placeholder="Numero Wave ou Alipay" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Note (optionnel)</label>
+          <textarea id="note" class="form-textarea" placeholder="Details pour l'equipe ABIT"></textarea>
+        </div>
+
+        <button type="button" class="btn btn-primary btn-block" id="btn-send">Envoyer la demande</button>
+        <p id="msg" style="font-size:0.85rem;margin-top:var(--space-3);display:none"></p>
+        <p id="login-hint" style="font-size:0.85rem;margin-top:var(--space-3);display:none">
+          <a href="login.html" style="color:var(--abit-green);font-weight:600">Connectez-vous</a> pour envoyer une demande.
+        </p>
+      </div>
+
+      <h2 style="font-size:1rem;font-weight:600;margin:var(--space-6) 0 var(--space-3)">Mes demandes</h2>
+      <div id="history"></div>
+      <div id="hist-empty" class="empty-state" style="display:none;padding:var(--space-6)">
+        <p>Aucune demande pour le moment.</p>
+      </div>
+    </main>
+  </div>
+
+  <nav class="bottom-nav">
+    <a href="index.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      Accueil
+    </a>
+    <a href="exchange.html" class="active">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 16V4M7 4L3 8M7 4l4 4M17 8v12M17 20l4-4M17 20l-4-4"/></svg>
+      Echange
+    </a>
+    <a href="shop.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/></svg>
+      Boutique
+    </a>
+    <a href="orders.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      Commandes
+    </a>
+    <a href="profile.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      Profil
+    </a>
+  </nav>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+    import { getFirestore, collection, getDocs, addDoc, doc, getDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+
+    const cfg = {
+      apiKey: "AIzaSyDHSNdIiEsg7XlfgRA3YGZuVVNkkJShnXQ",
+      authDomain: "abit-d927a.firebaseapp.com",
+      projectId: "abit-d927a",
+      storageBucket: "abit-d927a.firebasestorage.app",
+      messagingSenderId: "254745714667",
+      appId: "1:254745714667:web:0ff4451bdd63d680aa03ae"
+    };
+    const app = initializeApp(cfg);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    var rate = 95;
+    var direction = "rmb_to_xof";
+    var currentUser = null;
+
+    function fmt(n) { return Number(n).toLocaleString("fr-FR"); }
+
+    function updateCalc() {
+      var amount = Number(document.getElementById("amount").value) || 0;
+      var resultEl = document.getElementById("result");
+      var label = document.getElementById("amount-label");
+      if (direction === "rmb_to_xof") {
+        label.textContent = "Montant RMB";
+        resultEl.textContent = amount ? fmt(Math.round(amount * rate)) + " XOF" : "—";
+      } else {
+        label.textContent = "Montant XOF";
+        resultEl.textContent = amount ? fmt(Math.round((amount / rate) * 100) / 100) + " RMB" : "—";
+      }
+    }
+
+    document.querySelectorAll(".dir-btn").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        direction = btn.getAttribute("data-dir");
+        document.querySelectorAll(".dir-btn").forEach(function (b) {
+          b.classList.toggle("active", b === btn);
+        });
+        document.getElementById("rate-sub").textContent =
+          direction === "rmb_to_xof" ? "RMB vers XOF" : "XOF vers RMB";
+        updateCalc();
+      });
+    });
+    document.getElementById("amount").addEventListener("input", updateCalc);
+
+    async function loadRate() {
+      try {
+        var snap = await getDoc(doc(db, "appSettings", "exchange"));
+        if (snap.exists() && snap.data().rmbToXof) {
+          rate = Number(snap.data().rmbToXof);
+        }
+      } catch (e) {}
+      document.getElementById("rate-display").textContent = "1 RMB = " + fmt(rate) + " XOF";
+      updateCalc();
+    }
+
+    async function loadHistory() {
+      var box = document.getElementById("history");
+      var empty = document.getElementById("hist-empty");
+      box.innerHTML = "";
+      if (!currentUser) { empty.style.display = "block"; return; }
+      try {
+        var snap = await getDocs(collection(db, "exchangeRequests"));
+        var mine = [];
+        snap.forEach(function (d) {
+          var data = d.data();
+          if (data.userId === currentUser.uid) mine.push(Object.assign({ id: d.id }, data));
+        });
+        mine.sort(function (a, b) {
+          var ta = (a.createdAt && a.createdAt.toMillis) ? a.createdAt.toMillis() : 0;
+          var tb = (b.createdAt && b.createdAt.toMillis) ? b.createdAt.toMillis() : 0;
+          return tb - ta;
+        });
+        if (!mine.length) { empty.style.display = "block"; return; }
+        empty.style.display = "none";
+        var labels = { pending: "En attente", confirmed: "Confirmee", done: "Terminee", refused: "Refusee" };
+        mine.forEach(function (r) {
+          var card = document.createElement("div");
+          card.className = "card";
+          card.style.marginBottom = "10px";
+          card.style.padding = "12px";
+          var title = document.createElement("div");
+          title.style.fontWeight = "600";
+          title.textContent = (r.direction === "xof_to_rmb" ? "XOF → RMB" : "RMB → XOF") + " · " + (labels[r.status] || r.status || "En attente");
+          var sub = document.createElement("div");
+          sub.style.fontSize = "0.85rem";
+          sub.style.color = "var(--abit-gray-600)";
+          sub.style.marginTop = "4px";
+          sub.textContent = fmt(r.amount || 0) + " → ~ " + fmt(r.estimatedReceive || 0);
+          card.appendChild(title);
+          card.appendChild(sub);
+          box.appendChild(card);
+        });
+      } catch (e) {
+        empty.style.display = "block";
+      }
+    }
+
+    document.getElementById("btn-send").addEventListener("click", async function () {
+      var msg = document.getElementById("msg");
+      msg.style.display = "none";
+      if (!currentUser) {
+        document.getElementById("login-hint").style.display = "block";
+        return;
+      }
+      var amount = Number(document.getElementById("amount").value);
+      if (!amount || amount <= 0) {
+        msg.style.color = "var(--status-error)";
+        msg.textContent = "Indiquez un montant.";
+        msg.style.display = "block";
+        return;
+      }
+      var receive = direction === "rmb_to_xof" ? Math.round(amount * rate) : Math.round((amount / rate) * 100) / 100;
+      var btn = document.getElementById("btn-send");
+      btn.disabled = true;
+      btn.textContent = "Envoi...";
+      try {
+        await addDoc(collection(db, "exchangeRequests"), {
+          userId: currentUser.uid,
+          userEmail: currentUser.email || "",
+          direction: direction,
+          amount: amount,
+          estimatedReceive: receive,
+          rateUsed: rate,
+          paySn: document.getElementById("pay-sn").value,
+          payCn: document.getElementById("pay-cn").value,
+          contact: document.getElementById("contact").value.trim(),
+          note: document.getElementById("note").value.trim(),
+          status: "pending",
+          createdAt: serverTimestamp()
+        });
+        msg.style.color = "var(--status-success)";
+        msg.textContent = "Demande envoyee. L'equipe ABIT la traite.";
+        msg.style.display = "block";
+        document.getElementById("amount").value = "";
+        document.getElementById("note").value = "";
+        updateCalc();
+        loadHistory();
+      } catch (e) {
+        msg.style.color = "var(--status-error)";
+        msg.textContent = "Erreur : " + (e.message || "reessayez");
+        msg.style.display = "block";
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "Envoyer la demande";
+      }
+    });
+
+    onAuthStateChanged(auth, function (user) {
+      currentUser = user;
+      document.getElementById("login-hint").style.display = user ? "none" : "block";
+      loadHistory();
+    });
+    loadRate();
+  </script>
+</body>
+</html>
