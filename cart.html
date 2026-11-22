@@ -6,27 +6,15 @@
   <meta name="theme-color" content="#0B3D2E" />
   <title>ABIT — Panier</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="css/design-system.css?v=12" />
+  <link rel="stylesheet" href="css/design-system.css?v=13" />
   <style>
-    .cart-item {
-      display: flex; gap: 12px; padding: 14px 0;
-      border-bottom: 1px solid var(--abit-gray-100);
-    }
+    .cart-item { display: flex; gap: 12px; padding: 14px 0; border-bottom: 1px solid var(--abit-gray-100); }
     .cart-item img, .cart-ph {
-      width: 72px; height: 72px; border-radius: 10px; object-fit: cover;
-      background: #E5EAE8; flex-shrink: 0;
+      width: 72px; height: 72px; border-radius: 10px; object-fit: cover; background: #E5EAE8; flex-shrink: 0;
     }
-    .cart-ph {
-      display: flex; align-items: center; justify-content: center;
-      font-size: 0.65rem; color: var(--abit-gray-400);
-    }
-    .qty-mini {
-      display: inline-flex; align-items: center; gap: 8px; margin-top: 8px;
-    }
-    .qty-mini button {
-      width: 28px; height: 28px; border-radius: 8px; border: 1px solid var(--abit-gray-200);
-      background: #fff; font-weight: 700;
-    }
+    .cart-ph { display: flex; align-items: center; justify-content: center; font-size: 0.65rem; color: var(--abit-gray-400); }
+    .qty-mini { display: inline-flex; align-items: center; gap: 8px; margin-top: 8px; }
+    .qty-mini button { width: 28px; height: 28px; border-radius: 8px; border: 1px solid var(--abit-gray-200); background: #fff; font-weight: 700; }
     .total-box {
       position: sticky; bottom: calc(64px + env(safe-area-inset-bottom));
       background: #fff; border-top: 1px solid var(--abit-gray-100);
@@ -38,7 +26,7 @@
   <div class="page-content">
     <header class="app-header">
       <div class="container" style="display:flex;align-items:center;gap:12px">
-        <a href="shop.html" style="color:#fff;font-size:1.4rem">‹</a>
+        <a href="shop.html" style="color:#fff;font-size:1.4rem">&lsaquo;</a>
         <div class="logo">Panier</div>
       </div>
     </header>
@@ -51,14 +39,30 @@
 
       <div id="list"></div>
 
+      <div class="card" id="addr-box" style="display:none;margin-top:var(--space-4)">
+        <div class="form-group">
+          <label class="form-label">Telephone de contact</label>
+          <input type="tel" id="phone" class="form-input" placeholder="+221 ..." />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Adresse de livraison (Senegal)</label>
+          <textarea id="address" class="form-textarea" placeholder="Quartier, ville, points de repere"></textarea>
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+          <label class="form-label">Note (optionnel)</label>
+          <input type="text" id="note" class="form-input" placeholder="Instructions" />
+        </div>
+      </div>
+
       <div class="total-box" id="total-box" style="display:none">
         <div style="display:flex;justify-content:space-between;margin-bottom:12px">
           <span style="font-weight:600">Total</span>
           <span id="total" style="font-weight:700;color:var(--abit-green);font-size:1.15rem">0 XOF</span>
         </div>
         <button type="button" class="btn btn-primary btn-block" id="btn-order">Passer la commande</button>
+        <p id="order-msg" style="font-size:0.85rem;margin-top:8px;text-align:center;display:none"></p>
         <p style="font-size:0.75rem;color:var(--abit-gray-400);margin-top:8px;text-align:center">
-          Validation manuelle par ABIT apres confirmation
+          Validation manuelle par ABIT
         </p>
       </div>
     </main>
@@ -88,6 +92,25 @@
   </nav>
 
   <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+    import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+
+    const cfg = {
+      apiKey: "AIzaSyDHSNdIiEsg7XlfgRA3YGZuVVNkkJShnXQ",
+      authDomain: "abit-d927a.firebaseapp.com",
+      projectId: "abit-d927a",
+      storageBucket: "abit-d927a.firebasestorage.app",
+      messagingSenderId: "254745714667",
+      appId: "1:254745714667:web:0ff4451bdd63d680aa03ae"
+    };
+    const app = initializeApp(cfg);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    var currentUser = null;
+
+    onAuthStateChanged(auth, function (u) { currentUser = u; });
+
     function getCart() {
       try { return JSON.parse(localStorage.getItem("abit_cart") || "[]"); }
       catch (e) { return []; }
@@ -102,15 +125,18 @@
       var list = document.getElementById("list");
       var empty = document.getElementById("empty");
       var totalBox = document.getElementById("total-box");
+      var addr = document.getElementById("addr-box");
       list.innerHTML = "";
 
       if (!cart.length) {
         empty.style.display = "block";
         totalBox.style.display = "none";
+        addr.style.display = "none";
         return;
       }
       empty.style.display = "none";
       totalBox.style.display = "block";
+      addr.style.display = "block";
 
       var total = 0;
       cart.forEach(function (item, idx) {
@@ -126,7 +152,7 @@
         } else {
           var ph = document.createElement("div");
           ph.className = "cart-ph";
-          ph.textContent = "—";
+          ph.textContent = "-";
           row.appendChild(ph);
         }
 
@@ -151,7 +177,7 @@
 
         var minus = document.createElement("button");
         minus.type = "button";
-        minus.textContent = "−";
+        minus.textContent = "-";
         minus.addEventListener("click", function () {
           var c = getCart();
           if ((c[idx].qty || 1) <= 1) c.splice(idx, 1);
@@ -197,13 +223,60 @@
         list.appendChild(row);
       });
 
-      document.getElementById("total").textContent =
-        total.toLocaleString("fr-FR") + " XOF";
+      document.getElementById("total").textContent = total.toLocaleString("fr-FR") + " XOF";
     }
 
-    document.getElementById("btn-order").addEventListener("click", function () {
-      alert("Commande : connecte-toi ou cree un compte pour finaliser. Prochaine etape : enregistrement Firestore des commandes.");
-      location.href = "login.html";
+    document.getElementById("btn-order").addEventListener("click", async function () {
+      var msg = document.getElementById("order-msg");
+      msg.style.display = "none";
+      if (!currentUser) {
+        msg.style.color = "var(--status-error)";
+        msg.textContent = "Connectez-vous pour commander.";
+        msg.style.display = "block";
+        setTimeout(function () { location.href = "login.html"; }, 900);
+        return;
+      }
+      var cart = getCart();
+      if (!cart.length) return;
+      var phone = document.getElementById("phone").value.trim();
+      var address = document.getElementById("address").value.trim();
+      if (!phone || !address) {
+        msg.style.color = "var(--status-error)";
+        msg.textContent = "Telephone et adresse requis.";
+        msg.style.display = "block";
+        return;
+      }
+      var total = cart.reduce(function (s, i) { return s + (i.priceXof || 0) * (i.qty || 1); }, 0);
+      var num = "ABIT-" + Date.now().toString().slice(-8);
+      var btn = document.getElementById("btn-order");
+      btn.disabled = true;
+      btn.textContent = "Envoi...";
+      try {
+        var ref = await addDoc(collection(db, "orders"), {
+          orderNumber: num,
+          userId: currentUser.uid,
+          userEmail: currentUser.email || "",
+          phone: phone,
+          address: address,
+          note: document.getElementById("note").value.trim(),
+          items: cart.map(function (i) {
+            return { id: i.id, name: i.name, priceXof: i.priceXof || 0, qty: i.qty || 1, imageUrl: i.imageUrl || "" };
+          }),
+          totalXof: total,
+          status: "received",
+          trackingCode: "",
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp()
+        });
+        localStorage.removeItem("abit_cart");
+        location.href = "tracking.html?order=" + encodeURIComponent(ref.id);
+      } catch (e) {
+        msg.style.color = "var(--status-error)";
+        msg.textContent = "Erreur : " + (e.message || "reessayez");
+        msg.style.display = "block";
+        btn.disabled = false;
+        btn.textContent = "Passer la commande";
+      }
     });
 
     render();
