@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
+  <meta name="theme-color" content="#0B3D2E" />
+  <title>ABIT — Messages</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/design-system.css?v=14" />
+  <style>
+    body { background: #F4F6F5; }
+    .chat-wrap {
+      display: flex; flex-direction: column; height: 100dvh;
+      max-height: 100dvh;
+    }
+    .chat-header {
+      background: var(--abit-green); color: #fff;
+      padding: 14px 16px calc(14px + env(safe-area-inset-top));
+      display: flex; align-items: center; gap: 12px; flex-shrink: 0;
+    }
+    .chat-header a { color: #fff; font-size: 1.4rem; line-height: 1; }
+    .chat-header .title { font-weight: 700; font-size: 1.05rem; }
+    .chat-header .sub { font-size: 0.75rem; opacity: 0.85; }
+    .messages {
+      flex: 1; overflow-y: auto; padding: 16px 14px 12px;
+      display: flex; flex-direction: column; gap: 8px;
+      -webkit-overflow-scrolling: touch;
+    }
+    .bubble {
+      max-width: 78%; padding: 10px 14px; border-radius: 16px;
+      font-size: 0.92rem; line-height: 1.45; word-break: break-word;
+      position: relative;
+    }
+    .bubble.client {
+      align-self: flex-end; background: var(--abit-green); color: #fff;
+      border-bottom-right-radius: 4px;
+    }
+    .bubble.admin {
+      align-self: flex-start; background: #fff; color: var(--abit-gray-800);
+      border: 1px solid var(--abit-gray-100);
+      border-bottom-left-radius: 4px;
+      box-shadow: var(--shadow-sm);
+    }
+    .bubble .time {
+      display: block; font-size: 0.68rem; opacity: 0.7; margin-top: 4px; text-align: right;
+    }
+    .bubble.admin .time { text-align: left; }
+    .composer {
+      background: #fff; border-top: 1px solid var(--abit-gray-100);
+      padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
+      display: flex; gap: 8px; align-items: flex-end; flex-shrink: 0;
+    }
+    .composer textarea {
+      flex: 1; border: 1.5px solid var(--abit-gray-200); border-radius: 20px;
+      padding: 10px 14px; font-size: 0.95rem; resize: none; max-height: 100px;
+      min-height: 42px; font-family: inherit; outline: none;
+    }
+    .composer textarea:focus { border-color: var(--abit-green); }
+    .composer button {
+      width: 44px; height: 44px; border-radius: 50%; background: var(--abit-green);
+      color: #fff; border: none; font-size: 1.15rem; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .composer button:disabled { opacity: 0.5; }
+    .empty-chat {
+      text-align: center; color: var(--abit-gray-400); font-size: 0.9rem;
+      padding: 40px 20px;
+    }
+    #login-required {
+      display: none; text-align: center; padding: 60px 24px;
+    }
+  </style>
+</head>
+<body>
+  <div class="chat-wrap" id="chat-app" style="display:none">
+    <header class="chat-header">
+      <a href="javascript:history.back()" aria-label="Retour">&lsaquo;</a>
+      <div>
+        <div class="title">Support ABIT</div>
+        <div class="sub">Equipe Al Baraka</div>
+      </div>
+    </header>
+
+    <div class="messages" id="messages">
+      <div class="empty-chat" id="empty">Aucun message pour le moment.<br>Ecrivez-nous, nous repondons rapidement.</div>
+    </div>
+
+    <form class="composer" id="form">
+      <textarea id="input" rows="1" placeholder="Votre message..."></textarea>
+      <button type="submit" id="btn-send" aria-label="Envoyer">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+          <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
+        </svg>
+      </button>
+    </form>
+  </div>
+
+  <div id="login-required">
+    <p style="font-weight:600;margin-bottom:8px">Connectez-vous</p>
+    <p style="color:var(--abit-gray-600);margin-bottom:20px">Pour discuter avec l'equipe ABIT.</p>
+    <a href="login.html" class="btn btn-primary">Se connecter</a>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+    import {
+      getFirestore, collection, addDoc, doc, setDoc, onSnapshot,
+      serverTimestamp, query, orderBy
+    } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+
+    const cfg = {
+      apiKey: "AIzaSyDHSNdIiEsg7XlfgRA3YGZuVVNkkJShnXQ",
+      authDomain: "abit-d927a.firebaseapp.com",
+      projectId: "abit-d927a",
+      storageBucket: "abit-d927a.firebasestorage.app",
+      messagingSenderId: "254745714667",
+      appId: "1:254745714667:web:0ff4451bdd63d680aa03ae"
+    };
+    const app = initializeApp(cfg);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    var currentUser = null;
+    var unsub = null;
+
+    function formatTime(ts) {
+      if (!ts) return "";
+      var d = ts.toDate ? ts.toDate() : new Date(ts);
+      return d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+    }
+
+    function renderMessages(msgs) {
+      var box = document.getElementById("messages");
+      var empty = document.getElementById("empty");
+      box.innerHTML = "";
+      if (!msgs.length) {
+        box.appendChild(empty);
+        empty.style.display = "block";
+        return;
+      }
+      empty.style.display = "none";
+      msgs.forEach(function (m) {
+        var b = document.createElement("div");
+        b.className = "bubble " + (m.sender === "client" ? "client" : "admin");
+        var txt = document.createElement("div");
+        txt.textContent = m.text || "";
+        var time = document.createElement("span");
+        time.className = "time";
+        time.textContent = formatTime(m.createdAt);
+        b.appendChild(txt);
+        b.appendChild(time);
+        box.appendChild(b);
+      });
+      box.scrollTop = box.scrollHeight;
+    }
+
+    function listen() {
+      if (!currentUser) return;
+      if (unsub) unsub();
+      var q = query(
+        collection(db, "chats", currentUser.uid, "messages"),
+        orderBy("createdAt", "asc")
+      );
+      unsub = onSnapshot(q, function (snap) {
+        var msgs = [];
+        snap.forEach(function (d) { msgs.push(d.data()); });
+        renderMessages(msgs);
+      }, function () {
+        renderMessages([]);
+      });
+    }
+
+    document.getElementById("form").addEventListener("submit", async function (e) {
+      e.preventDefault();
+      if (!currentUser) return;
+      var input = document.getElementById("input");
+      var text = input.value.trim();
+      if (!text) return;
+      var btn = document.getElementById("btn-send");
+      btn.disabled = true;
+      input.value = "";
+      try {
+        await addDoc(collection(db, "chats", currentUser.uid, "messages"), {
+          text: text,
+          sender: "client",
+          createdAt: serverTimestamp()
+        });
+        await setDoc(doc(db, "chats", currentUser.uid), {
+          userId: currentUser.uid,
+          userEmail: currentUser.email || "",
+          lastMessage: text,
+          lastMessageAt: serverTimestamp(),
+          unreadAdmin: true
+        }, { merge: true });
+      } catch (err) {
+        input.value = text;
+        alert("Impossible d'envoyer. Reessayez.");
+      } finally {
+        btn.disabled = false;
+        input.focus();
+      }
+    });
+
+    var ta = document.getElementById("input");
+    ta.addEventListener("input", function () {
+      this.style.height = "auto";
+      this.style.height = Math.min(this.scrollHeight, 100) + "px";
+    });
+
+    onAuthStateChanged(auth, function (user) {
+      currentUser = user;
+      if (!user) {
+        document.getElementById("chat-app").style.display = "none";
+        document.getElementById("login-required").style.display = "block";
+        return;
+      }
+      document.getElementById("login-required").style.display = "none";
+      document.getElementById("chat-app").style.display = "flex";
+      listen();
+    });
+  </script>
+</body>
+</html>
