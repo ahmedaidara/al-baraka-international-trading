@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#0B3D2E" />
   <title>ABIT — Echange</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="css/design-system.css" />
+  <link rel="stylesheet" href="css/design-system.css?v=14" />
   <style>
     .rate-box {
       background: linear-gradient(145deg, #0B3D2E, #146B4E);
@@ -21,6 +21,18 @@
       border: 1.5px solid var(--abit-gray-200); background: #fff; font-weight: 600; font-size: 0.85rem;
     }
     .dir-btn.active { background: var(--abit-green); color: #fff; border-color: var(--abit-green); }
+    .chat-cta {
+      display: flex; align-items: center; gap: 12px;
+      background: #fff; border: 1.5px solid var(--abit-gray-100);
+      border-radius: var(--radius-lg); padding: 14px 16px;
+      margin-bottom: var(--space-4); text-decoration: none; color: inherit;
+    }
+    .chat-cta:hover { border-color: var(--abit-green); }
+    .chat-icon {
+      width: 40px; height: 40px; border-radius: 12px;
+      background: rgba(11,61,46,0.08); color: var(--abit-green);
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
   </style>
 </head>
 <body>
@@ -33,6 +45,19 @@
     </header>
 
     <main class="container" style="padding-top:var(--space-4)">
+      <a href="chat.html" class="chat-cta">
+        <div class="chat-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
+          </svg>
+        </div>
+        <div style="flex:1">
+          <div style="font-weight:700;font-size:0.95rem">Discuter avec ABIT</div>
+          <div style="font-size:0.8rem;color:var(--abit-gray-400)">Question sur un echange ? Ecrivez-nous</div>
+        </div>
+        <span style="color:var(--abit-gray-400)">&rsaquo;</span>
+      </a>
+
       <div class="rate-box">
         <div style="font-size:0.8rem;opacity:0.85">Taux indicatif</div>
         <div class="big" id="rate-display">—</div>
