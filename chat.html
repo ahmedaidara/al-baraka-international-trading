@@ -6,13 +6,10 @@
   <meta name="theme-color" content="#0B3D2E" />
   <title>ABIT — Messages</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="css/design-system.css?v=14" />
+  <link rel="stylesheet" href="css/design-system.css?v=15" />
   <style>
     body { background: #F4F6F5; }
-    .chat-wrap {
-      display: flex; flex-direction: column; height: 100dvh;
-      max-height: 100dvh;
-    }
+    .chat-wrap { display: flex; flex-direction: column; height: 100dvh; max-height: 100dvh; }
     .chat-header {
       background: var(--abit-green); color: #fff;
       padding: 14px 16px calc(14px + env(safe-area-inset-top));
@@ -29,7 +26,6 @@
     .bubble {
       max-width: 78%; padding: 10px 14px; border-radius: 16px;
       font-size: 0.92rem; line-height: 1.45; word-break: break-word;
-      position: relative;
     }
     .bubble.client {
       align-self: flex-end; background: var(--abit-green); color: #fff;
@@ -58,7 +54,7 @@
     .composer textarea:focus { border-color: var(--abit-green); }
     .composer button {
       width: 44px; height: 44px; border-radius: 50%; background: var(--abit-green);
-      color: #fff; border: none; font-size: 1.15rem; flex-shrink: 0;
+      color: #fff; border: none; flex-shrink: 0;
       display: flex; align-items: center; justify-content: center;
     }
     .composer button:disabled { opacity: 0.5; }
@@ -66,9 +62,8 @@
       text-align: center; color: var(--abit-gray-400); font-size: 0.9rem;
       padding: 40px 20px;
     }
-    #login-required {
-      display: none; text-align: center; padding: 60px 24px;
-    }
+    #login-required { display: none; text-align: center; padding: 60px 24px; }
+    #err { color: #B91C1C; font-size: 0.8rem; text-align: center; padding: 8px; display: none; }
   </style>
 </head>
 <body>
@@ -84,6 +79,7 @@
     <div class="messages" id="messages">
       <div class="empty-chat" id="empty">Aucun message pour le moment.<br>Ecrivez-nous, nous repondons rapidement.</div>
     </div>
+    <div id="err"></div>
 
     <form class="composer" id="form">
       <textarea id="input" rows="1" placeholder="Votre message..."></textarea>
@@ -106,7 +102,7 @@
     import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
     import {
       getFirestore, collection, addDoc, doc, setDoc, onSnapshot,
-      serverTimestamp, query, orderBy
+      serverTimestamp
     } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
     const cfg = {
@@ -123,17 +119,25 @@
 
     var currentUser = null;
     var unsub = null;
+    var localMsgs = [];
 
-    function formatTime(ts) {
-      if (!ts) return "";
-      var d = ts.toDate ? ts.toDate() : new Date(ts);
-      return d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+    function tsValue(m) {
+      if (m.createdAt && m.createdAt.toMillis) return m.createdAt.toMillis();
+      if (m.clientTs) return m.clientTs;
+      return 0;
     }
 
-    function renderMessages(msgs) {
+    function formatTime(m) {
+      var t = tsValue(m);
+      if (!t) return "";
+      return new Date(t).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+    }
+
+    function render() {
       var box = document.getElementById("messages");
       var empty = document.getElementById("empty");
       box.innerHTML = "";
+      var msgs = localMsgs.slice().sort(function (a, b) { return tsValue(a) - tsValue(b); });
       if (!msgs.length) {
         box.appendChild(empty);
         empty.style.display = "block";
@@ -147,7 +151,7 @@
         txt.textContent = m.text || "";
         var time = document.createElement("span");
         time.className = "time";
-        time.textContent = formatTime(m.createdAt);
+        time.textContent = formatTime(m);
         b.appendChild(txt);
         b.appendChild(time);
         box.appendChild(b);
@@ -158,17 +162,19 @@
     function listen() {
       if (!currentUser) return;
       if (unsub) unsub();
-      var q = query(
+      unsub = onSnapshot(
         collection(db, "chats", currentUser.uid, "messages"),
-        orderBy("createdAt", "asc")
+        function (snap) {
+          localMsgs = [];
+          snap.forEach(function (d) { localMsgs.push(Object.assign({ id: d.id }, d.data())); });
+          render();
+        },
+        function (err) {
+          var e = document.getElementById("err");
+          e.textContent = "Erreur de chargement : " + (err.message || err.code || "");
+          e.style.display = "block";
+        }
       );
-      unsub = onSnapshot(q, function (snap) {
-        var msgs = [];
-        snap.forEach(function (d) { msgs.push(d.data()); });
-        renderMessages(msgs);
-      }, function () {
-        renderMessages([]);
-      });
     }
 
     document.getElementById("form").addEventListener("submit", async function (e) {
@@ -180,10 +186,17 @@
       var btn = document.getElementById("btn-send");
       btn.disabled = true;
       input.value = "";
+
+      // Affichage immediat
+      var optimistic = { text: text, sender: "client", clientTs: Date.now() };
+      localMsgs.push(optimistic);
+      render();
+
       try {
         await addDoc(collection(db, "chats", currentUser.uid, "messages"), {
           text: text,
           sender: "client",
+          clientTs: Date.now(),
           createdAt: serverTimestamp()
         });
         await setDoc(doc(db, "chats", currentUser.uid), {
@@ -193,9 +206,14 @@
           lastMessageAt: serverTimestamp(),
           unreadAdmin: true
         }, { merge: true });
+        document.getElementById("err").style.display = "none";
       } catch (err) {
+        localMsgs = localMsgs.filter(function (m) { return m !== optimistic; });
+        render();
         input.value = text;
-        alert("Impossible d'envoyer. Reessayez.");
+        var e = document.getElementById("err");
+        e.textContent = "Envoi impossible : " + (err.message || err.code || "");
+        e.style.display = "block";
       } finally {
         btn.disabled = false;
         input.focus();
